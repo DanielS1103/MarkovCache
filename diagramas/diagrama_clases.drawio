@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="SaaoYQih6Y63SIXmfxoc" name="Página-1">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="900" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v1" parent="1" style="ellipse;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="INICIO" vertex="1">
+          <mxGeometry height="40" width="120" x="290" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="v2" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Inicializar U[s] = 0 para todo s ∈ S&#xa;historial = []" vertex="1">
+          <mxGeometry height="55" width="280" x="210" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Calcular umbral de convergencia:&#xa;threshold = ε · (1 − γ) / γ    (Ec. 16.12)" vertex="1">
+          <mxGeometry height="55" width="280" x="210" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="U_prev ← copia de U&#xa;δ ← 0" vertex="1">
+          <mxGeometry height="55" width="280" x="210" y="295" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" parent="1" style="rhombus;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" value="¿Quedan&#xa;estados sin&#xa;actualizar?" vertex="1">
+          <mxGeometry height="70" width="200" x="-50" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Seleccionar siguiente estado s" vertex="1">
+          <mxGeometry height="55" width="280" x="-90" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Actualización de Bellman (Ec. 16.10):&#xa;U&#39;[s] = max_a Σ P(s&#39;|s,a)·[R(s,a,s&#39;) + γ·U_prev[s&#39;]]" vertex="1">
+          <mxGeometry height="65" width="280" x="-90" y="705" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="δ ← max(δ, |U[s] − U_prev[s]|)" vertex="1">
+          <mxGeometry height="55" width="280" x="-90" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="v9" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Guardar snapshot de U en historial" vertex="1">
+          <mxGeometry height="55" width="280" x="210" y="407.5" as="geometry" />
+        </mxCell>
+        <mxCell id="v10" parent="1" style="rhombus;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" value="¿δ ≤ threshold?" vertex="1">
+          <mxGeometry height="70" width="200" x="250" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="v11" parent="1" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Extraer política óptima:&#xa;π*(s) = argmax_a Q(s, a, U)  para todo s ∈ S" vertex="1">
+          <mxGeometry height="55" width="280" x="210" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="v12" parent="1" style="ellipse;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="FIN&#xa;Retornar U, π*, historial" vertex="1">
+          <mxGeometry height="50" width="160" x="270" y="1110" as="geometry" />
+        </mxCell>
+        <mxCell id="ve1" edge="1" parent="1" source="v1" style="endArrow=block;endFill=1;" target="v2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve2" edge="1" parent="1" source="v2" style="endArrow=block;endFill=1;" target="v3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve3" edge="1" parent="1" source="v3" style="endArrow=block;endFill=1;" target="v4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve4" edge="1" parent="1" source="v4" style="endArrow=block;endFill=1;" target="v5" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="50" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ve5" edge="1" parent="1" source="v5" style="endArrow=block;endFill=1;" target="v6" value="Sí">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve6" edge="1" parent="1" source="v6" style="endArrow=block;endFill=1;" target="v7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve7" edge="1" parent="1" source="v7" style="endArrow=block;endFill=1;" target="v8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve8" edge="1" parent="1" source="v8" style="endArrow=block;endFill=1;" target="v5" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="50" y="1000" />
+              <mxPoint x="-160" y="1000" />
+              <mxPoint x="-160" y="440" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ve9" edge="1" parent="1" source="v5" style="endArrow=block;endFill=1;" target="v9" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve10" edge="1" parent="1" source="v9" style="endArrow=block;endFill=1;" target="v10" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve11" edge="1" parent="1" source="v10" style="endArrow=block;endFill=1;" target="v11" value="Sí">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve12" edge="1" parent="1" source="v11" style="endArrow=block;endFill=1;" target="v12" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ve13" edge="1" parent="1" source="v10" style="endArrow=block;endFill=1;" target="v4" value="No">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="935" />
+              <mxPoint x="510" y="322" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

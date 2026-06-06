@@ -1,0 +1,712 @@
+"""
+Generador de diagramas UML en formato draw.io (.drawio).
+Ejecutar: python diagramas/generar_diagramas.py
+Produce 5 archivos .drawio en la carpeta diagramas/:
+  - diagrama_clases.drawio
+  - flujo_value_iteration.drawio
+  - flujo_policy_iteration.drawio
+  - diagrama_componentes.drawio
+  - secuencia_simulacion.drawio
+"""
+import os
+
+DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ═════════════════════════════════════════════════════════════════════
+# Helpers XML base
+# ═════════════════════════════════════════════════════════════════════
+
+def esc(s):
+    return str(s).replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace('"',"&quot;")
+
+def val(s):
+    return esc(s).replace("\n", "&#xa;")
+
+def header(pw=1600, ph=1100):
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        f'<mxGraphModel dx="1200" dy="760" grid="1" gridSize="10" guides="1" '
+        f'tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" '
+        f'pageWidth="{pw}" pageHeight="{ph}" math="0" shadow="0">\n'
+        '  <root>\n'
+        '    <mxCell id="0"/>\n'
+        '    <mxCell id="1" parent="0"/>\n'
+    )
+
+FOOTER = '  </root>\n</mxGraphModel>\n'
+
+def vx(i, v, style, x, y, w, h, par="1"):
+    return (f'    <mxCell id="{i}" value="{val(v)}" style="{style}" vertex="1" parent="{par}">'
+            f'<mxGeometry x="{x}" y="{y}" width="{w}" height="{h}" as="geometry"/></mxCell>\n')
+
+def cx(i, v, style, ry, w, h, par):
+    return (f'    <mxCell id="{i}" value="{val(v)}" style="{style}" vertex="1" parent="{par}">'
+            f'<mxGeometry x="0" y="{ry}" width="{w}" height="{h}" as="geometry"/></mxCell>\n')
+
+def eg(i, src, tgt, style, label=""):
+    return (f'    <mxCell id="{i}" value="{val(label)}" style="{style}" edge="1" '
+            f'source="{src}" target="{tgt}" parent="1">'
+            f'<mxGeometry relative="1" as="geometry"/></mxCell>\n')
+
+def save(content, filename):
+    path = os.path.join(DIR, filename)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"  Generado: diagramas/{filename}")
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Helpers para diagrama de clases UML
+# ═════════════════════════════════════════════════════════════════════
+
+COLORS = {
+    "abstract":     ("#f5f5f5", "#666666"),
+    "core":         ("#d5e8d4", "#82b366"),
+    "algorithm":    ("#ffe6cc", "#d6b656"),
+    "online":       ("#f8cecc", "#b85450"),
+    "distribution": ("#dae8fc", "#6c8ebf"),
+    "baseline":     ("#e1d5e7", "#9673a6"),
+    "simulation":   ("#fff2cc", "#d6b656"),
+}
+LH  = 18
+TXT = ("text;align=left;spacingLeft=8;overflow=hidden;"
+       "strokeColor=none;fillColor=none;verticalAlign=top;")
+
+def uml_class(buf, cid, name, x, y, w, attrs, methods, kind="core", abstract=False):
+    """Agrega una clase UML. Usa IDs: cid, cid+1, cid+2, cid+3."""
+    fill, stroke = COLORS[kind]
+    fs  = "3" if abstract else "1"
+    nm  = ("«abstracto»\n" if abstract else "") + name
+    ah  = max(len(attrs)   * LH + 8, 10)
+    mh  = max(len(methods) * LH + 8, 10)
+    th  = 30 + ah + 8 + mh
+    sty = (f"swimlane;fontStyle={fs};align=center;startSize=30;"
+           f"fillColor={fill};strokeColor={stroke};container=1;collapsible=0;")
+    buf += vx(cid,   nm,                sty, x, y, w, th)
+    buf += cx(cid+1, "\n".join(attrs),  TXT, 30,      w, ah, cid)
+    buf += cx(cid+2, "",                f"line;strokeColor={stroke};fillColor=none;",
+                                             30+ah,    w, 8,  cid)
+    buf += cx(cid+3, "\n".join(methods),TXT, 30+ah+8, w, mh, cid)
+    return buf, th
+
+INHERIT = "endArrow=block;endFill=0;edgeStyle=orthogonalEdgeStyle;"
+DEPEND  = "endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;"
+COMPOSE = ("endArrow=block;endFill=0;startArrow=diamondThin;startFill=1;"
+           "edgeStyle=orthogonalEdgeStyle;")
+CREATES = "endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;"
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Helpers para diagramas de flujo
+# ═════════════════════════════════════════════════════════════════════
+
+PROC  = "rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;"
+DEC   = "rhombus;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;"
+TERM  = "ellipse;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;"
+LABEL_ST = ("text;html=1;align=center;verticalAlign=middle;resizable=0;"
+            "autosize=1;strokeColor=none;fillColor=none;fontStyle=1;")
+ARROW      = "endArrow=block;endFill=1;"
+ARROW_DASH = "endArrow=block;endFill=1;dashed=1;"
+
+def proc(buf, i, text, x, y, w=200, h=50):
+    return buf + vx(i, text, PROC, x, y, w, h)
+
+def dec(buf, i, text, x, y, w=160, h=60):
+    return buf + vx(i, text, DEC, x, y, w, h)
+
+def term_node(buf, i, text, x, y, w=120, h=40):
+    return buf + vx(i, text, TERM, x, y, w, h)
+
+def lbl(buf, i, text, x, y):
+    return buf + vx(i, text, LABEL_ST, x, y, 260, 28)
+
+def arr(buf, i, src, tgt, label="", style=ARROW):
+    return buf + eg(i, src, tgt, style, label)
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Helpers para diagrama de secuencia
+# ═════════════════════════════════════════════════════════════════════
+
+def lifeline(i, x, y_top, y_bot):
+    """Linea de vida vertical punteada."""
+    style = "endArrow=none;dashed=1;strokeColor=#aaaaaa;strokeWidth=1;"
+    return (f'    <mxCell id="{i}" value="" style="{style}" edge="1" parent="1">'
+            f'<mxGeometry relative="1" as="geometry">'
+            f'<mxPoint x="{x}" y="{y_top}" as="sourcePoint"/>'
+            f'<mxPoint x="{x}" y="{y_bot}" as="targetPoint"/>'
+            f'</mxGeometry></mxCell>\n')
+
+def seq_msg(i, label, x1, y, x2, ret=False):
+    """Mensaje horizontal entre participantes."""
+    dash  = "dashed=1;" if ret else ""
+    arrow = "open"  if ret else "block"
+    fill  = "0"     if ret else "1"
+    style = (f"endArrow={arrow};endFill={fill};{dash}"
+             f"align=center;verticalAlign=bottom;fontSize=11;")
+    return (f'    <mxCell id="{i}" value="{val(label)}" style="{style}" edge="1" parent="1">'
+            f'<mxGeometry relative="1" as="geometry">'
+            f'<mxPoint x="{x1}" y="{y}" as="sourcePoint"/>'
+            f'<mxPoint x="{x2}" y="{y}" as="targetPoint"/>'
+            f'</mxGeometry></mxCell>\n')
+
+def self_msg(i, label, x, y, dy=30, offset=60):
+    """Mensaje de auto-llamada sobre la misma linea de vida."""
+    style = "endArrow=block;endFill=1;align=left;verticalAlign=middle;fontSize=11;"
+    return (f'    <mxCell id="{i}" value="{val(label)}" style="{style}" edge="1" parent="1">'
+            f'<mxGeometry relative="1" as="geometry">'
+            f'<mxPoint x="{x}"        y="{y}"    as="sourcePoint"/>'
+            f'<mxPoint x="{x}"        y="{y+dy}" as="targetPoint"/>'
+            f'<Array as="points">'
+            f'<mxPoint x="{x+offset}" y="{y}"/>'
+            f'<mxPoint x="{x+offset}" y="{y+dy}"/>'
+            f'</Array>'
+            f'</mxGeometry></mxCell>\n')
+
+def seq_frame(i, label, x, y, w, h):
+    """Caja de fragmento combinado (loop, alt, etc.)."""
+    style = ("strokeColor=#555555;fillColor=none;dashed=1;"
+             "align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;"
+             "fontStyle=1;fontSize=11;")
+    return vx(i, label, style, x, y, w, h)
+
+def seq_note(i, text, x, y, w=160, h=40):
+    """Nota aclaratoria en el diagrama de secuencia."""
+    style = ("shape=note;whiteSpace=wrap;fontSize=10;"
+             "fillColor=#fffde7;strokeColor=#d6b656;align=left;spacingLeft=6;")
+    return vx(i, text, style, x, y, w, h)
+
+def activation(i, x, y, h=60):
+    """Caja de activacion sobre la linea de vida."""
+    style = "fillColor=#ffe6cc;strokeColor=#d6b656;"
+    return vx(i, "", style, x - 6, y, 12, h)
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Helpers para diagrama de componentes
+# ═════════════════════════════════════════════════════════════════════
+
+COMP_COLORS = {
+    "entry":  ("#d5e8d4", "#82b366"),
+    "core":   ("#d5e8d4", "#82b366"),
+    "alg":    ("#ffe6cc", "#d6b656"),
+    "online": ("#f8cecc", "#b85450"),
+    "dist":   ("#dae8fc", "#6c8ebf"),
+    "base":   ("#e1d5e7", "#9673a6"),
+    "sim":    ("#fff2cc", "#d6b656"),
+    "out":    ("#fffde7", "#f0c040"),
+}
+
+def comp_box(buf, i, text, x, y, w, h, kind="core"):
+    fill, stroke = COMP_COLORS[kind]
+    style = f"rounded=1;whiteSpace=wrap;fillColor={fill};strokeColor={stroke};"
+    return buf + vx(i, text, style, x, y, w, h)
+
+
+# ═════════════════════════════════════════════════════════════════════
+# DIAGRAMA 1: Clases UML
+# ═════════════════════════════════════════════════════════════════════
+
+def gen_class_diagram():
+    buf = header(pw=1600, ph=1200)
+
+    # Columna 1: jerarquia de distribuciones (x=30)
+    buf, _ = uml_class(buf, 100, "AccessDistribution", 30, 30, 250,
+        ["# num_pages : int", "# page_ids : list"],
+        ["+ get_probs() : dict", "+ sample() : int", "+ name() : str"],
+        kind="abstract", abstract=True)
+
+    buf, _ = uml_class(buf, 110, "UniformAccess", 30, 230, 250,
+        [],
+        ["+ get_probs() : dict", "+ name() : str"],
+        kind="distribution")
+
+    buf, _ = uml_class(buf, 120, "ZipfAccess", 30, 355, 250,
+        ["+ alpha : float"],
+        ["+ get_probs() : dict", "+ name() : str"],
+        kind="distribution")
+
+    buf, _ = uml_class(buf, 130, "TemporalLocalityAccess", 30, 495, 250,
+        ["+ num_hot : int", "+ hot_prob : float"],
+        ["+ get_probs() : dict", "+ name() : str"],
+        kind="distribution")
+
+    buf, _ = uml_class(buf, 140, "NonStationaryAccess", 30, 645, 250,
+        ["+ dist1 : AccessDistribution",
+         "+ dist2 : AccessDistribution",
+         "+ switch_step : int"],
+        ["+ get_probs(step) : dict", "+ sample() : int", "+ reset()"],
+        kind="distribution")
+
+    # Columna 2: nucleo MDP (x=320)
+    buf, _ = uml_class(buf, 200, "MDP", 320, 30, 270,
+        [],
+        ["+ states() : list",
+         "+ actions(state) : list",
+         "+ get_transitions(s, a) : list",
+         "+ reward(s, a, s') : float",
+         "+ get_gamma() : float",
+         "+ q_value(s, a, U) : float",
+         "+ best_action(s, U) : action",
+         "+ best_q(s, U) : float"],
+        kind="abstract", abstract=True)
+
+    buf, _ = uml_class(buf, 210, "CacheMDP", 320, 300, 270,
+        ["+ num_pages : int",
+         "+ cache_size : int",
+         "+ access_probs : dict",
+         "- _gamma : float"],
+        ["+ states() : list",
+         "+ actions(state) : list",
+         "+ get_transitions(s, a) : list",
+         "+ reward(s, a, s') : float",
+         "+ num_states() : int",
+         "+ verify_transitions() : bool",
+         "+ describe_state(s) : str",
+         "+ describe_policy(policy)"],
+        kind="core")
+
+    # Columna 3: algoritmos (x=630)
+    buf, _ = uml_class(buf, 300, "ValueIteration", 630, 30, 270,
+        ["+ mdp : MDP", "+ epsilon : float"],
+        ["+ solve() : (U, policy, history)",
+         "- _extract_policy(U) : dict",
+         "+ convergence_report(history)$"],
+        kind="algorithm")
+
+    buf, _ = uml_class(buf, 310, "PolicyIteration", 630, 215, 270,
+        ["+ mdp : MDP", "+ eval_method : str", "+ k : int"],
+        ["+ solve() : (U, policy, history)",
+         "- _policy_evaluation_exact(pi) : dict",
+         "- _policy_evaluation_iterative(pi, U) : dict",
+         "+ convergence_report(history)$"],
+        kind="algorithm")
+
+    buf, _ = uml_class(buf, 320, "UCBAgent", 630, 470, 270,
+        ["+ cache_size : int", "+ num_pages : int", "+ c : float"],
+        ["+ select_action(cache, page) : action",
+         "+ update(cache, page, a, r)",
+         "+ reset()",
+         "+ get_learned_policy() : dict"],
+        kind="online")
+
+    # Columna 4: simulacion (x=940)
+    buf, _ = uml_class(buf, 400, "Simulator", 940, 30, 280,
+        ["+ num_pages : int",
+         "+ cache_size : int",
+         "+ access_dist : AccessDistribution"],
+        ["+ simulate_mdp(policy, n) : SimResult",
+         "+ simulate_lru(n) : SimResult",
+         "+ simulate_fifo(n) : SimResult",
+         "+ simulate_random(n) : SimResult",
+         "+ simulate_ucb(agent, n) : SimResult",
+         "+ simulate_optimal(n) : SimResult",
+         "+ run_all(...) : list",
+         "+ print_results(results)$"],
+        kind="simulation")
+
+    buf, _ = uml_class(buf, 410, "SimResult", 940, 340, 280,
+        ["+ policy_name : str",
+         "+ hits : int",
+         "+ misses : int",
+         "+ rewards_over_time : list",
+         "+ cumulative_rewards : list"],
+        ["+ record(hit)",
+         "+ hit_rate : float",
+         "+ total_reward : float",
+         "+ summary() : str"],
+        kind="simulation")
+
+    # Fila inferior: baselines (y=730)
+    buf, _ = uml_class(buf, 500, "LRUPolicy", 320, 730, 200,
+        ["- _access_order : list"],
+        ["+ on_access(page)",
+         "+ decide_eviction(cache, page) : int",
+         "+ reset()"],
+        kind="baseline")
+
+    buf, _ = uml_class(buf, 510, "FIFOPolicy", 540, 730, 200,
+        ["- _insertion_order : list"],
+        ["+ on_load(page)",
+         "+ decide_eviction(cache, page) : int",
+         "+ reset()"],
+        kind="baseline")
+
+    buf, _ = uml_class(buf, 520, "RandomPolicy", 760, 730, 200,
+        [],
+        ["+ decide_eviction(cache, page) : int", "+ reset()"],
+        kind="baseline")
+
+    buf, _ = uml_class(buf, 530, "OptimalOfflinePolicy", 980, 730, 220,
+        ["- _sequence : list", "- _current_step : int"],
+        ["+ decide_eviction(cache, page) : int", "+ reset()"],
+        kind="baseline")
+
+    # Relaciones
+    buf += eg("e1",  "110", "100", INHERIT)
+    buf += eg("e2",  "120", "100", INHERIT)
+    buf += eg("e3",  "130", "100", INHERIT)
+    buf += eg("e4",  "140", "100", COMPOSE, "dist1, dist2")
+    buf += eg("e5",  "210", "200", INHERIT)
+    buf += eg("e6",  "300", "200", DEPEND,  "«usa»")
+    buf += eg("e7",  "310", "200", DEPEND,  "«usa»")
+    buf += eg("e8",  "400", "100", DEPEND,  "«usa»")
+    buf += eg("e9",  "400", "320", DEPEND,  "«usa»")
+    buf += eg("e10", "400", "500", DEPEND,  "«usa»")
+    buf += eg("e11", "400", "510", DEPEND,  "«usa»")
+    buf += eg("e12", "400", "520", DEPEND,  "«usa»")
+    buf += eg("e13", "400", "530", DEPEND,  "«usa»")
+    buf += eg("e14", "400", "410", CREATES, "«crea»")
+
+    buf += FOOTER
+    save(buf, "diagrama_clases.drawio")
+
+
+# ═════════════════════════════════════════════════════════════════════
+# DIAGRAMA 2: Flujo Value Iteration
+# ═════════════════════════════════════════════════════════════════════
+
+def gen_vi_flowchart():
+    buf = header(pw=900, ph=1300)
+    CX, W, WD, HS, HD = 350, 280, 200, 55, 70
+
+    buf = term_node(buf, "v1",  "INICIO", CX-60, 30, 120, 40)
+    buf = proc(buf,      "v2",
+               "Inicializar U[s] = 0 para todo s ∈ S\nhistorial = []",
+               CX-W//2, 110, W, HS)
+    buf = proc(buf,      "v3",
+               "Calcular umbral de convergencia:\nthreshold = ε · (1 − γ) / γ    (Ec. 16.12)",
+               CX-W//2, 200, W, HS)
+    buf = proc(buf,      "v4",
+               "U_prev ← copia de U\nδ ← 0",
+               CX-W//2, 295, W, HS)
+    buf = dec(buf,       "v5",
+               "¿Quedan\nestados sin\nactualizar?",
+               CX-WD//2, 390, WD, HD)
+    buf = proc(buf,      "v6",
+               "Seleccionar siguiente estado s",
+               CX-W//2, 505, W, HS)
+    buf = proc(buf,      "v7",
+               "Actualización de Bellman (Ec. 16.10):\nU'[s] = max_a Σ P(s'|s,a)·[R(s,a,s') + γ·U_prev[s']]",
+               CX-W//2, 600, W, 65)
+    buf = proc(buf,      "v8",
+               "δ ← max(δ, |U[s] − U_prev[s]|)",
+               CX-W//2, 710, W, HS)
+    buf = proc(buf,      "v9",
+               "Guardar snapshot de U en historial",
+               CX-W//2, 805, W, HS)
+    buf = dec(buf,       "v10",
+               "¿δ ≤ threshold?",
+               CX-WD//2, 900, WD, HD)
+    buf = proc(buf,      "v11",
+               "Extraer política óptima:\nπ*(s) = argmax_a Q(s, a, U)  para todo s ∈ S",
+               CX-W//2, 1010, W, HS)
+    buf = term_node(buf, "v12",
+               "FIN\nRetornar U, π*, historial",
+               CX-80, 1110, 160, 50)
+
+    buf = arr(buf, "ve1",  "v1",  "v2")
+    buf = arr(buf, "ve2",  "v2",  "v3")
+    buf = arr(buf, "ve3",  "v3",  "v4")
+    buf = arr(buf, "ve4",  "v4",  "v5")
+    buf = arr(buf, "ve5",  "v5",  "v6",  "Sí")
+    buf = arr(buf, "ve6",  "v6",  "v7")
+    buf = arr(buf, "ve7",  "v7",  "v8")
+    buf = arr(buf, "ve8",  "v8",  "v5")
+    buf = arr(buf, "ve9",  "v5",  "v9",  "No")
+    buf = arr(buf, "ve10", "v9",  "v10")
+    buf = arr(buf, "ve11", "v10", "v11", "Sí")
+    buf = arr(buf, "ve12", "v11", "v12")
+    # Flecha "No" en decision delta → vuelta al ciclo externo
+    buf += (f'    <mxCell id="ve13" value="No" style="{ARROW}" edge="1" '
+            f'source="v10" target="v4" parent="1">'
+            f'<mxGeometry relative="1" as="geometry">'
+            f'<Array as="points">'
+            f'<mxPoint x="{CX+160}" y="935"/>'
+            f'<mxPoint x="{CX+160}" y="322"/>'
+            f'</Array>'
+            f'</mxGeometry></mxCell>\n')
+
+    buf += FOOTER
+    save(buf, "flujo_value_iteration.drawio")
+
+
+# ═════════════════════════════════════════════════════════════════════
+# DIAGRAMA 3: Flujo Policy Iteration
+# ═════════════════════════════════════════════════════════════════════
+
+def gen_pi_flowchart():
+    buf = header(pw=1000, ph=1500)
+    CX, W, WD, HS, HD = 400, 300, 200, 55, 70
+
+    buf = term_node(buf, "p1",  "INICIO", CX-60, 20, 120, 40)
+    buf = proc(buf,      "p2",
+               "Inicializar:\nπ[s] = primera acción disponible\nU[s] = 0   para todo s ∈ S",
+               CX-W//2, 100, W, 65)
+
+    buf = lbl(buf, "pl1", "── PASO 1: Evaluación de Política ──", CX-150, 205)
+    buf = dec(buf,  "p3", "eval_method\n= 'exact'?", CX-WD//2, 245, WD, HD)
+
+    buf = proc(buf, "p4a",
+               "Construir sistema lineal (Ec. 16.14):\n(I − γ·T_π)·U = R_π\nResolver con Eliminación Gaussiana",
+               CX-W-20, 355, W, 65)
+    buf = proc(buf, "p4b",
+               "Modified Policy Iteration:\nRepetir k veces:\nU(s) = Σ P(s'|s,π(s))·[R + γ·U(s')]",
+               CX+20, 355, W, 65)
+    buf = proc(buf, "p5",
+               "U ← solución obtenida (utilidades actualizadas)",
+               CX-W//2, 470, W, HS)
+
+    buf = lbl(buf, "pl2", "── PASO 2: Mejora de Política ──", CX-150, 560)
+    buf = proc(buf, "p6", "sin_cambios ← Verdadero", CX-W//2, 595, W, HS)
+    buf = dec(buf,  "p7", "¿Quedan\nestados sin\nrevisar?", CX-WD//2, 690, WD, HD)
+    buf = proc(buf, "p8", "Seleccionar siguiente estado s", CX-W//2, 810, W, HS)
+    buf = proc(buf, "p9", "a* ← argmax_a Q(s, a, U)", CX-W//2, 905, W, HS)
+    buf = dec(buf,  "p10","Q(s,a*,U) >\nQ(s,π[s],U) + ε?", CX-WD//2, 1005, WD, HD)
+    buf = proc(buf, "p11","π[s] ← a*\nsin_cambios ← Falso", CX-W//2, 1125, W, HS)
+    buf = proc(buf, "p12","Guardar (π, U) en historial", CX-W//2, 1230, W, HS)
+    buf = dec(buf,  "p13","¿sin_cambios\n= Verdadero?", CX-WD//2, 1330, WD, HD)
+    buf = term_node(buf, "p14", "FIN\nRetornar U, π*, historial", CX-80, 1455, 160, 50)
+
+    buf = arr(buf, "pe1",  "p1",  "p2")
+    buf = arr(buf, "pe2",  "p2",  "p3")
+    buf = arr(buf, "pe3a", "p3",  "p4a", "Sí")
+    buf = arr(buf, "pe3b", "p3",  "p4b", "No")
+    buf = arr(buf, "pe4a", "p4a", "p5")
+    buf = arr(buf, "pe4b", "p4b", "p5")
+    buf = arr(buf, "pe5",  "p5",  "p6")
+    buf = arr(buf, "pe6",  "p6",  "p7")
+    buf = arr(buf, "pe7",  "p7",  "p8",  "Sí")
+    buf = arr(buf, "pe8",  "p8",  "p9")
+    buf = arr(buf, "pe9",  "p9",  "p10")
+    buf = arr(buf, "pe10", "p10", "p11", "Sí")
+    buf = arr(buf, "pe11", "p11", "p7")
+    # "No" en p10 → vuelve al loop de estados
+    buf += (f'    <mxCell id="pe10b" value="No" style="{ARROW}" edge="1" '
+            f'source="p10" target="p7" parent="1">'
+            f'<mxGeometry relative="1" as="geometry">'
+            f'<Array as="points">'
+            f'<mxPoint x="{CX+160}" y="1040"/>'
+            f'<mxPoint x="{CX+160}" y="725"/>'
+            f'</Array>'
+            f'</mxGeometry></mxCell>\n')
+    buf = arr(buf, "pe12", "p7",  "p12", "No")
+    buf = arr(buf, "pe13", "p12", "p13")
+    buf = arr(buf, "pe14", "p13", "p14", "Sí")
+    # "No" en p13 → vuelve a la evaluacion de politica
+    buf += (f'    <mxCell id="pe13b" value="No" style="{ARROW}" edge="1" '
+            f'source="p13" target="p3" parent="1">'
+            f'<mxGeometry relative="1" as="geometry">'
+            f'<Array as="points">'
+            f'<mxPoint x="{CX-180}" y="1365"/>'
+            f'<mxPoint x="{CX-180}" y="280"/>'
+            f'</Array>'
+            f'</mxGeometry></mxCell>\n')
+
+    buf += FOOTER
+    save(buf, "flujo_policy_iteration.drawio")
+
+
+# ═════════════════════════════════════════════════════════════════════
+# DIAGRAMA 4: Componentes / Arquitectura
+# ═════════════════════════════════════════════════════════════════════
+
+def gen_component_diagram():
+    buf = header(pw=1400, ph=1000)
+    FLOW      = "endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;"
+    DASH_FLOW = "endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;"
+
+    buf = comp_box(buf, "c1",  "main.py\nEjecutor de experimentos",          600, 30, 220, 55, "entry")
+    buf = comp_box(buf, "c2",  "mdp.py\nInterfaz MDP abstracta\nq_value · best_action · best_q",
+                                                                              330, 160, 220, 65, "core")
+    buf = comp_box(buf, "c3",  "cache_mdp.py\nCacheMDP\nEstados · Acciones · Transiciones",
+                                                                              330, 290, 220, 65, "core")
+    buf = comp_box(buf, "c4",  "value_iteration.py\nValue Iteration\n(Figura 16.6)",
+                                                                              700, 160, 220, 65, "alg")
+    buf = comp_box(buf, "c5",  "policy_iteration.py\nPolicy Iteration\n(Figura 16.9) + Gauss",
+                                                                              700, 290, 220, 65, "alg")
+    buf = comp_box(buf, "c6",  "ucb.py\nUCBAgent\n(Sección 16.3)",           700, 420, 220, 65, "online")
+    buf = comp_box(buf, "c7",  "scenarios.py\nUniformAccess\nZipfAccess · TemporalLocality",
+                                                                               60, 160, 220, 65, "dist")
+    buf = comp_box(buf, "c8",  "baselines.py\nLRU · FIFO · Random\nÓptimo (Belady)",
+                                                                               60, 290, 220, 65, "base")
+    buf = comp_box(buf, "c9",  "simulator.py\nSimulator · SimResult\nMotor de simulación",
+                                                                              330, 480, 220, 65, "sim")
+    buf = comp_box(buf, "c10", "visualizer.py\nGráficas matplotlib\nPNGs → figures/",
+                                                                              600, 600, 220, 65, "out")
+
+    for src, tgt, label, sty in [
+        ("c1","c2","",        FLOW),
+        ("c1","c3","",        FLOW),
+        ("c1","c4","",        FLOW),
+        ("c1","c5","",        FLOW),
+        ("c1","c6","",        FLOW),
+        ("c1","c7","",        FLOW),
+        ("c1","c9","",        FLOW),
+        ("c1","c10","",       FLOW),
+        ("c3","c2","hereda",  DASH_FLOW),
+        ("c4","c2","usa",     DASH_FLOW),
+        ("c5","c2","usa",     DASH_FLOW),
+        ("c9","c7","usa",     DASH_FLOW),
+        ("c9","c8","usa",     DASH_FLOW),
+        ("c9","c6","usa",     DASH_FLOW),
+        ("c10","c9","datos",  DASH_FLOW),
+    ]:
+        buf += eg(f"ca_{src}_{tgt}", src, tgt, sty, label)
+
+    buf += FOOTER
+    save(buf, "diagrama_componentes.drawio")
+
+
+# ═════════════════════════════════════════════════════════════════════
+# DIAGRAMA 5: Secuencia de simulacion
+# ═════════════════════════════════════════════════════════════════════
+
+def gen_sequence_diagram():
+    PX = {
+        "usr":  80,
+        "main": 230,
+        "dist": 390,
+        "cmdp": 545,
+        "vi":   700,
+        "sim":  860,
+        "ucb":  1020,
+        "viz":  1180,
+    }
+    PW, PH   = 130, 42
+    LIFE_END = 1360
+
+    PART  = "rounded=0;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;"
+    ACTOR = "rounded=0;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;"
+
+    buf = header(pw=1400, ph=1500)
+
+    # Cajas de participantes
+    partes = [
+        ("p_usr",  "Usuario",            "usr",  ACTOR),
+        ("p_main", "main.py",            "main", PART),
+        ("p_dist", "AccessDistribution", "dist", PART),
+        ("p_cmdp", "CacheMDP",           "cmdp", PART),
+        ("p_vi",   "ValueIteration",     "vi",   PART),
+        ("p_sim",  "Simulator",          "sim",  PART),
+        ("p_ucb",  "UCBAgent",           "ucb",  PART),
+        ("p_viz",  "Visualizer",         "viz",  PART),
+    ]
+    for pid, name, key, sty in partes:
+        buf += vx(pid, name, sty, PX[key] - PW//2, 10, PW, PH)
+
+    # Lineas de vida
+    for idx, (_, _, key, _) in enumerate(partes):
+        buf += lifeline(f"ll{idx}", PX[key], PH + 10, LIFE_END)
+
+    # ── Mensajes ──────────────────────────────────────────────────────
+
+    buf += seq_msg("m1",  "python main.py",
+                   PX["usr"],  95,  PX["main"])
+
+    buf += seq_msg("m2",  "get_probs()",
+                   PX["main"], 140, PX["dist"])
+    buf += seq_msg("m3",  "{ page: probabilidad }",
+                   PX["dist"], 170, PX["main"], ret=True)
+    buf += seq_msg("m4",  "CacheMDP(N, K, probs, gamma)",
+                   PX["main"], 205, PX["cmdp"])
+    buf += seq_msg("m5",  "instancia MDP — 50 estados",
+                   PX["cmdp"], 235, PX["main"], ret=True)
+
+    buf += seq_msg("m6",  "ValueIteration(mdp).solve()",
+                   PX["main"], 285, PX["vi"])
+
+    buf += seq_frame("fr_vi",
+                     "loop  [hasta convergencia: delta <= threshold]",
+                     PX["vi"] - 20, 305,
+                     PX["cmdp"] - PX["vi"] + 190, 145)
+    buf += seq_msg("m7",  "best_q(s, U_prev)  para todo s",
+                   PX["vi"], 340, PX["cmdp"])
+    buf += seq_msg("m8",  "max_a Q(s, a, U)   [Bellman update]",
+                   PX["cmdp"], 375, PX["vi"], ret=True)
+
+    buf += seq_msg("m10", "U*, politica, historial",
+                   PX["vi"], 465, PX["main"], ret=True)
+
+    buf += seq_msg("m11", "simulate_mdp(politica, 10 000 pasos)",
+                   PX["main"], 510, PX["sim"])
+
+    buf += seq_frame("fr_sim",
+                     "loop  [para cada pagina en la secuencia de acceso]",
+                     PX["sim"] - 20, 530, 160, 135)
+    buf += self_msg("m12", "politica[(cache, pagina)]",
+                    PX["sim"], 555, dy=30, offset=70)
+    buf += self_msg("m13", "record(hit=True/False)",
+                    PX["sim"], 600, dy=30, offset=70)
+
+    buf += seq_msg("m14", "SimResult(MDP-VI):  hit_rate, recompensas",
+                   PX["sim"], 680, PX["main"], ret=True)
+
+    buf += seq_note("n1", "Se repite para\nsimulate_lru() y\nsimulate_fifo()",
+                    PX["main"] + 10, 720, 155, 50)
+    buf += seq_msg("m15", "simulate_lru(10 000)",
+                   PX["main"], 725, PX["sim"])
+    buf += seq_msg("m16", "SimResult(LRU)",
+                   PX["sim"], 755, PX["main"], ret=True)
+    buf += seq_msg("m17", "simulate_fifo(10 000)",
+                   PX["main"], 785, PX["sim"])
+    buf += seq_msg("m18", "SimResult(FIFO)",
+                   PX["sim"], 815, PX["main"], ret=True)
+
+    buf += seq_msg("m19", "simulate_ucb(ucb_agent, 10 000)",
+                   PX["main"], 855, PX["sim"])
+    buf += seq_frame("fr_ucb",
+                     "loop  [para cada paso de simulacion]",
+                     PX["sim"] - 20, 875,
+                     PX["ucb"] - PX["sim"] + 130, 145)
+    buf += seq_msg("m20", "select_action(cache, pagina)",
+                   PX["sim"], 910, PX["ucb"])
+    buf += seq_msg("m21", "accion  (UCB1: Q + c·sqrt(ln N_s / N_sa))",
+                   PX["ucb"], 940, PX["sim"], ret=True)
+    buf += seq_msg("m22", "update(cache, pagina, accion, reward)",
+                   PX["sim"], 975, PX["ucb"])
+    buf += seq_msg("m23", "estadisticas actualizadas",
+                   PX["ucb"], 1005, PX["sim"], ret=True)
+
+    buf += seq_msg("m24", "SimResult(UCB)",
+                   PX["sim"], 1035, PX["main"], ret=True)
+
+    buf += seq_msg("m25", "plot_hit_rate_comparison(results_by_scenario)",
+                   PX["main"], 1085, PX["viz"])
+    buf += seq_msg("m26", "figures/comparacion_hit_rate.png",
+                   PX["viz"], 1115, PX["main"], ret=True)
+    buf += seq_msg("m27", "plot_cumulative_rewards(zipf_results)",
+                   PX["main"], 1150, PX["viz"])
+    buf += seq_msg("m28", "figures/recompensa_acumulada_zipf.png",
+                   PX["viz"], 1180, PX["main"], ret=True)
+    buf += seq_msg("m29", "plot_vi_vs_pi(vi_hist, pi_hist)",
+                   PX["main"], 1215, PX["viz"])
+    buf += seq_msg("m30", "figures/vi_vs_pi.png",
+                   PX["viz"], 1245, PX["main"], ret=True)
+
+    buf += seq_msg("m31", "Resultados en consola + figures/ generados",
+                   PX["main"], 1295, PX["usr"])
+
+    # Cajas de activacion
+    buf += activation("act_main", PX["main"], 95,  h=1215)
+    buf += activation("act_vi",   PX["vi"],   285, h=195)
+    buf += activation("act_sim",  PX["sim"],  510, h=540)
+    buf += activation("act_ucb",  PX["ucb"],  910, h=130)
+    buf += activation("act_viz",  PX["viz"],  1085, h=175)
+
+    buf += FOOTER
+    save(buf, "secuencia_simulacion.drawio")
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Punto de entrada
+# ═════════════════════════════════════════════════════════════════════
+
+if __name__ == "__main__":
+    print("\nGenerando diagramas draw.io...\n")
+    gen_class_diagram()
+    gen_vi_flowchart()
+    gen_pi_flowchart()
+    gen_component_diagram()
+    gen_sequence_diagram()
+    print("\nListo. Archivos .drawio generados en la carpeta diagramas/")

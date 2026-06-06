@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1200" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    <mxCell id="c1" value="main.py&#xa;Ejecutor de experimentos" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="30" width="220" height="55" as="geometry"/></mxCell>
+    <mxCell id="c2" value="mdp.py&#xa;Interfaz MDP abstracta&#xa;q_value · best_action · best_q" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="330" y="160" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c3" value="cache_mdp.py&#xa;CacheMDP&#xa;Estados · Acciones · Transiciones" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="330" y="290" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c4" value="value_iteration.py&#xa;Value Iteration&#xa;(Figura 16.6)" style="rounded=1;whiteSpace=wrap;fillColor=#ffe6cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="700" y="160" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c5" value="policy_iteration.py&#xa;Policy Iteration&#xa;(Figura 16.9) + Gauss" style="rounded=1;whiteSpace=wrap;fillColor=#ffe6cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="700" y="290" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c6" value="ucb.py&#xa;UCBAgent&#xa;(Sección 16.3)" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="700" y="420" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c7" value="scenarios.py&#xa;UniformAccess&#xa;ZipfAccess · TemporalLocality" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="60" y="160" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c8" value="baselines.py&#xa;LRU · FIFO · Random&#xa;Óptimo (Belady)" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="60" y="290" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c9" value="simulator.py&#xa;Simulator · SimResult&#xa;Motor de simulación" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="330" y="480" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="c10" value="visualizer.py&#xa;Gráficas matplotlib&#xa;PNGs → figures/" style="rounded=1;whiteSpace=wrap;fillColor=#fffde7;strokeColor=#f0c040;" vertex="1" parent="1"><mxGeometry x="600" y="600" width="220" height="65" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c2" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c3" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c4" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c5" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c6" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c7" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c7" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c9" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c9" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c1_c10" value="" style="endArrow=block;endFill=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c10" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c3_c2" value="hereda" style="endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="c2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c4_c2" value="usa" style="endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c4" target="c2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c5_c2" value="usa" style="endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c5" target="c2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c9_c7" value="usa" style="endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c9" target="c7" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c9_c8" value="usa" style="endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c9" target="c8" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c9_c6" value="usa" style="endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c9" target="c6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ca_c10_c9" value="datos" style="endArrow=open;endFill=0;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" source="c10" target="c9" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+  </root>
+</mxGraphModel>
